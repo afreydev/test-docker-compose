@@ -1,0 +1,48 @@
+name: Test docker-compose
+on: [push]
+jobs:
+
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest]
+
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: set macOS environ
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install docker
+          brew install docker-compose
+          brew install docker-machine
+          brew install boot2docker boot2docker-cli
+          echo -n 'docker installed in path: ' && which docker
+          echo -n 'docker-compose installed in path: ' && which docker-compose
+          echo -n 'docker-machine installed in path: ' && which docker-machine
+          mkdir -p ~/.docker/machine/cache/
+          cd ~/.docker/machine/cache/
+          curl -Lo boot2docker.iso https://github.com/boot2docker/boot2docker/releases/download/v19.03.5/boot2docker.iso
+          ls -lha 
+          file boot2docker.iso
+          docker-machine create --driver virtualbox --virtualbox-boot2docker-url ~/.docker/machine/cache/boot2docker.iso default
+          echo "----"
+          docker-machine ls
+          docker-machine env default
+          gem install docker-sync --user-install
+          GEMPATH=$(gem env | grep  'USER INSTALLATION DIRECTORY' | cut -d: -f2 | tr -d ' ')/bin
+          echo GEMPATH=$GEMPATH
+          echo "export PATH=\"\$PATH:$GEMPATH\"" >> ~/.bashrc
+          source ~/.bashrc
+          echo $PATH
+          echo -n 'docker-sync installed in path: ' && which docker-sync
+          docker-sync
+          eval "$(docker-machine env default)"
+          docker-machine env default >> ~/.bashrc 
+          #echo "COMPOSE_INTERACTIVE_NO_CLI=0" >> ~/.bashrc 
+          echo "echo Sourced file ~/.bashrc "$(date) >> ~/.bashrc
+      - name: Run ping
+        run: |
+          source ~/.bashrc
+          docker-compose run ubuntu /bin/bash /opt/run.sh
