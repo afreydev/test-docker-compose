@@ -1,0 +1,21 @@
+version: '3'
+
+volumes:
+  node_modules:
+
+services:
+  ubuntu:
+    image: ubuntu:latest
+    stdin_open: true
+    tty: true
+    depends_on:
+      - mysql
+    volumes:
+      - ./:/opt/
+  mysql:
+    image: mysql
+    environment:
+        MYSQL_ROOT_PASSWORD: example
+    expose:
+      - 3306 
+
